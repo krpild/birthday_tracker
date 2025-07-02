@@ -3,13 +3,13 @@ import logging
 from discord.ext import tasks, commands
 from discord import app_commands
 from dotenv import load_dotenv
+import json
 import requests
 import os
 import datetime
+from person import Person
 
-adam = ["Adam", datetime.date(2025, 7, 2)]
-jane = ["Jane", datetime.date(2025, 7, 2)]
-people = [adam, jane]
+people = []
 
 load_dotenv()
 discord_token = os.getenv('DISCORD_TOKEN')
@@ -41,11 +41,18 @@ async def show_people(interaction: discord.Interaction):
         "Content-Type": "application/json"
     }
     response = requests.get(url, headers=headers)
-    await interaction.response.send_message("Here are all the people:\n" + response.text)
+    data = response.json()
+    people = []
+    for entry in data:
+        people.append(Person(entry['name'],entry['birthday'][5:]))
+    result = ""
+    for person in people:
+        result += "\n" + person.name + " : " + person.birthday
+    await interaction.response.send_message("Here are all the people:\n" + result)
 
-@bot.tree.command(name="upload_person", description="Upload a person name")
-@app_commands.describe(name="Name of the person")
-async def upload_person(interaction: discord.Interaction, name: str):
+@bot.tree.command(name="upload_birthday", description="Upload a birthday")
+@app_commands.describe(name="Global user name, not the display name.", date="Birth date of the person. Use YYYY-MM-DD format.")
+async def upload_birthday(interaction: discord.Interaction, name: str, date: str):
     people.append(name)
     await interaction.response.send_message(f"Person '{name}' added!")
 
