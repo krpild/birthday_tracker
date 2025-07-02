@@ -142,7 +142,7 @@ async def delete_birthday(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(f"Specified user '{name}' does not exist in the birthday list.")
 
 
-@tasks.loop(seconds=30)
+@tasks.loop(hours=24)
 async def notify_birthday():
     channel = bot.get_channel(int(channel_id))
     now = datetime.date.today()
