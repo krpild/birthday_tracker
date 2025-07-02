@@ -89,6 +89,20 @@ async def upload_birthday(interaction: discord.Interaction, name: str, date: str
         await interaction.response.send_message(f"Use the correct date format - YYYY-MM-DD.")
 
 
+@bot.tree.command(name="delete_birthday", description="delete a birthday.")
+@app_commands.describe(name="Global user name, not the display name. The birthday associated with the name will be deleted.")
+async def delete_birthday(interaction: discord.Interaction, name: str):
+    if user_exists(name):
+        response = requests.delete(db_domain, headers=headers, params={'name': f"eq.{name}"})
+        if response.status_code == 204:
+            await interaction.response.send_message(f"User '{name}' deleted from birthday list.")
+        else:
+            await interaction.response.send_message("Could not access database domain.")
+    else:
+        await interaction.response.send_message(f"Specified user '{name}' does not exist in the birthday list.")
+
+
+
 @tasks.loop(seconds=30)
 async def notify_birthday():
     channel = bot.get_channel(int(channel_id))
