@@ -9,8 +9,6 @@ import os
 import datetime
 from person import Person
 
-people = []
-
 load_dotenv()
 discord_token = os.getenv('DISCORD_TOKEN')
 channel_id = os.getenv('CHANNEL_ID')
@@ -32,8 +30,10 @@ async def on_ready():
     print(f"Bot is ready. Logged in as {bot.user}")
     check_date_change.start()
 
+
 @bot.tree.command(name="show_people", description="Displays people in system")
 async def show_people(interaction: discord.Interaction):
+
     url = db_domain
     headers = {
         "apikey": db_token,
@@ -41,28 +41,76 @@ async def show_people(interaction: discord.Interaction):
         "Content-Type": "application/json"
     }
     response = requests.get(url, headers=headers)
-    data = response.json()
-    people = []
-    for entry in data:
-        people.append(Person(entry['name'],entry['birthday'][5:]))
-    result = ""
-    for person in people:
-        result += "\n" + person.name + " : " + person.birthday
-    await interaction.response.send_message("Here are all the people:\n" + result)
 
-@bot.tree.command(name="upload_birthday", description="Upload a birthday")
+    if response.status_code == 200:
+        data = response.json()
+        
+        people = []
+        for entry in data:
+            people.append(Person(entry['name'], datetime.date.fromisoformat(entry['birthday'])))
+
+        sorted_birthdays = sorted(people, key=lambda d: (d.birthday.month, d.birthday.day))
+
+        result = ""
+        for person in sorted_birthdays:
+            result += "\n" + person.name + " : " + person.birthday.strftime('%B %d')
+
+        await interaction.response.send_message("Here are all the people:" + result)
+
+    else:
+        await interaction.response.send_message("Could not access database domain.")
+
+
+@bot.tree.command(name="upload_birthday", description="Upload a birthday.")
 @app_commands.describe(name="Global user name, not the display name.", date="Birth date of the person. Use YYYY-MM-DD format.")
 async def upload_birthday(interaction: discord.Interaction, name: str, date: str):
-    people.append(name)
-    await interaction.response.send_message(f"Person '{name}' added!")
+    url = db_domain
+    headers = {
+        "apikey": db_token,
+        "Authorization": f"Bearer {db_token}",
+        "Content-Type": "application/json"
+    }
+    try:
+        datetime.date.fromisoformat(date)
+        
+        response = requests.post(url,headers=headers, json={'name': name, 'birthday': date})
 
-@tasks.loop(minutes=30)
+        if response.status_code == 201:
+            await interaction.response.send_message(f"{name} added to birthday list.")
+        else:
+            await interaction.response.send_message("Could not access database domain.")
+    except:
+        await interaction.response.send_message(f"Use the correct date format - YYYY-MM-DD.")
+
+
+@tasks.loop(seconds=30)
 async def check_date_change():
     channel = bot.get_channel(int(channel_id))
     now = datetime.date.today()
+    url = db_domain
+    headers = {
+        "apikey": db_token,
+        "Authorization": f"Bearer {db_token}",
+        "Content-Type": "application/json"
+    }
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        
+        people = []
+        for entry in data:
+            people.append(Person(entry['name'], datetime.date.fromisoformat(entry['birthday'])))
+    
     for person in people:
-        if person[1] == now:
-            await channel.send("Happy birthday " + person[0])
+        user = discord.utils.find(lambda m: m.name == person.name, channel.guild.members)
+        print(user)
+        if (person.birthday == now):
+            if user is None:
+                await channel.send("Happy birthday, " + person.name)
+            else:
+                print("I am here")
+                await channel.send("Happy birthday " + user.mention)
 
 
 bot.run(discord_token, log_handler=handler, log_level=logging.DEBUG)
