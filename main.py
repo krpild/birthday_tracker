@@ -41,6 +41,10 @@ def user_exists(name: str):
                 return True
     return False
 
+def is_upcoming(date: datetime.date):
+    today = datetime.date.today()
+    return (date.month, date.day) > (today.month, today.day)
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -70,12 +74,33 @@ async def show_birthdays(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("Could not access database domain.")
 
+@bot.tree.command(name="show_upcoming_birthdays", description="Displays all upcoming birthdays for this year")
+async def show_upcoming_birthdays(interaction: discord.Interaction):
+    response = requests.get(db_domain, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        
+        people = []
+        for entry in data:
+            people.append(Person(entry['name'], datetime.date.fromisoformat(entry['birthday'])))
+
+        sorted_birthdays = sorted(people, key=lambda d: (d.birthday.month, d.birthday.day))
+        
+
+        result = ""
+        for person in sorted_birthdays:
+            if is_upcoming(person.birthday):
+                result += "\n" + person.name + " : " + person.birthday.strftime('%B %d')
+
+        await interaction.response.send_message("Here are upcoming registered birthdays:" + result)
+
+    else:
+        await interaction.response.send_message("Could not access database domain.")
 @bot.tree.command(name="upload_birthday", description="Upload a birthday.")
 @app_commands.describe(name="Global user name, not the display name.", date="Birth date of the person. Use YYYY-MM-DD format.")
 async def upload_birthday(interaction: discord.Interaction, name: str, date: str):
-    
     try:
-        datetime.date.fromisoformat(date)
         if datetime.date.fromisoformat(date) > datetime.date.today():
             await interaction.response.send_message("No time travellers please.")
 
