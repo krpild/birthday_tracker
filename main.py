@@ -76,6 +76,9 @@ async def upload_birthday(interaction: discord.Interaction, name: str, date: str
     
     try:
         datetime.date.fromisoformat(date)
+        if datetime.date.fromisoformat(date) > datetime.date.today():
+            await interaction.response.send_message("No time travellers please.")
+
         if user_exists(name):
             await interaction.response.send_message("Please refrain from adding duplicate users.")
         
@@ -100,7 +103,6 @@ async def delete_birthday(interaction: discord.Interaction, name: str):
             await interaction.response.send_message("Could not access database domain.")
     else:
         await interaction.response.send_message(f"Specified user '{name}' does not exist in the birthday list.")
-
 
 
 @tasks.loop(seconds=30)
