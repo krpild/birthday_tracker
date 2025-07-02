@@ -104,13 +104,12 @@ async def check_date_change():
     
     for person in people:
         user = discord.utils.find(lambda m: m.name == person.name, channel.guild.members)
-        print(user)
-        if (person.birthday == now):
+        
+        if (person.birthday.day == now.day and person.birthday.month == now.month):
             if user is None:
-                await channel.send("Happy birthday, " + person.name)
+                await channel.send("Happy birthday, " + person.name + "!")
             else:
-                print("I am here")
-                await channel.send("Happy birthday " + user.mention)
+                await channel.send("Happy birthday " + user.mention + "!")
 
 
 bot.run(discord_token, log_handler=handler, log_level=logging.DEBUG)
