@@ -7,12 +7,14 @@ import requests
 import os
 import datetime
 from person import Person
+import keep_alive
 
 load_dotenv()
 discord_token = os.getenv('DISCORD_TOKEN')
 channel_id = os.getenv('CHANNEL_ID')
 db_domain = os.getenv('DB_DOMAIN')
 db_token = os.getenv('DB_DOMAIN_TOKEN')
+maintainer_role = os.getenv('MAINTAINER')
 
 headers = {
         "apikey": db_token,
@@ -100,6 +102,10 @@ async def show_upcoming_birthdays(interaction: discord.Interaction):
 @bot.tree.command(name="upload_birthday", description="Upload a birthday.")
 @app_commands.describe(name="Global user name, not the display name.", date="Birth date of the person. Use YYYY-MM-DD format.")
 async def upload_birthday(interaction: discord.Interaction, name: str, date: str):
+    if interaction.user.get_role(maintainer_role) is None:
+        print(interaction.user)
+        await interaction.response.send_message("You are unauthorised to use this command.")
+        return
     try:
         if datetime.date.fromisoformat(date) > datetime.date.today():
             await interaction.response.send_message("No time travellers please.")
@@ -120,6 +126,10 @@ async def upload_birthday(interaction: discord.Interaction, name: str, date: str
 @bot.tree.command(name="delete_birthday", description="delete a birthday.")
 @app_commands.describe(name="Global user name, not the display name. The birthday associated with the name will be deleted.")
 async def delete_birthday(interaction: discord.Interaction, name: str):
+    if interaction.user.get_role(maintainer_role) is None:
+        print(interaction.user)
+        await interaction.response.send_message("You are unauthorised to use this command.")
+        return
     if user_exists(name):
         response = requests.delete(db_domain, headers=headers, params={'name': f"eq.{name}"})
         if response.status_code == 204:
