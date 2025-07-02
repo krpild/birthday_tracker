@@ -7,7 +7,7 @@ import requests
 import os
 import datetime
 from person import Person
-import keep_alive
+from keep_alive import keep_alive
 
 load_dotenv()
 discord_token = os.getenv('DISCORD_TOKEN')
@@ -15,6 +15,8 @@ channel_id = os.getenv('CHANNEL_ID')
 db_domain = os.getenv('DB_DOMAIN')
 db_token = os.getenv('DB_DOMAIN_TOKEN')
 maintainer_role = os.getenv('MAINTAINER')
+
+keep_alive()
 
 headers = {
         "apikey": db_token,
