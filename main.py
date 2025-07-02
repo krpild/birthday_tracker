@@ -29,6 +29,18 @@ test_time = datetime.date.today()
 
 bot = commands.Bot(command_prefix="/", intents=intents)
 
+def user_exists(name: str):
+    response = requests.get(db_domain, headers=headers)
+    people = []
+    if response.status_code == 200:
+        data = response.json()
+        for entry in data:
+            people.append(Person(entry['name'], datetime.date.fromisoformat(entry['birthday'])))
+        for person in people:
+            if person.name == name:
+                return True
+    return False
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -58,18 +70,14 @@ async def show_birthdays(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("Could not access database domain.")
 
-
 @bot.tree.command(name="upload_birthday", description="Upload a birthday.")
 @app_commands.describe(name="Global user name, not the display name.", date="Birth date of the person. Use YYYY-MM-DD format.")
 async def upload_birthday(interaction: discord.Interaction, name: str, date: str):
     try:
         date = datetime.date.fromisoformat(date)
-        print(date)
-        
         if user_exists(name):
             await interaction.response.send_message("Please refrain from adding duplicate users.")
         
-
         response = requests.post(db_domain, headers=headers, json={'name': name, 'birthday': date})
 
         if response.status_code == 201:
@@ -106,15 +114,5 @@ async def notify_birthday():
 
 bot.run(discord_token, log_handler=handler, log_level=logging.DEBUG)
 
-def user_exists(name: str):
-    response = requests.get(db_domain, headers=headers)
-    people = []
-    if response.status_code == 200:
-        data = response.json()
-        for entry in data:
-            people.append(Person(entry['name'], datetime.date.fromisoformat(entry['birthday'])))
-        for person in people:
-            if person.name == name:
-                return True
-    return False
+
     
