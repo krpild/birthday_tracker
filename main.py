@@ -73,8 +73,9 @@ async def show_birthdays(interaction: discord.Interaction):
 @bot.tree.command(name="upload_birthday", description="Upload a birthday.")
 @app_commands.describe(name="Global user name, not the display name.", date="Birth date of the person. Use YYYY-MM-DD format.")
 async def upload_birthday(interaction: discord.Interaction, name: str, date: str):
+    
     try:
-        date = datetime.date.fromisoformat(date)
+        datetime.date.fromisoformat(date)
         if user_exists(name):
             await interaction.response.send_message("Please refrain from adding duplicate users.")
         
